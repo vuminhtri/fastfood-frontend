@@ -1,17 +1,52 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+import { configureStore } from "@reduxjs/toolkit";
+import { Provider } from "react-redux";
+import productsReducer, { productsFetch } from "./slices/productsSlice.js";
+// import { productsApi } from "./slices/productsAPI.js";
+import cartReducer, { getTotals } from "./slices/cartSlice.js";
+import authReducer, { loadUser } from "./slices/authSlice.js";
+import ordersReducer from "./slices/ordersSlice.js";
+import usersReducer from "./slices/usersSlice.js";
+import { productsApi } from "./slices/productsApi.js";
+
+const store = configureStore({
+  reducer: {
+    products: productsReducer,
+    orders: ordersReducer,
+    users: usersReducer,
+    cart: cartReducer,
+    auth: authReducer,
+    [productsApi.reducerPath]: productsApi.reducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(productsApi.middleware),
+});
+
+const init = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (token) {
+      await store.dispatch(loadUser());
+    }
+  } catch (error) {
+    console.error("Error initializing app:", error);
+  }
+};
+
+init();
+
+store.dispatch(productsFetch());
+store.dispatch(getTotals());
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <App />
+    <Provider store={store}>
+      <App />
+    </Provider>
   </React.StrictMode>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
